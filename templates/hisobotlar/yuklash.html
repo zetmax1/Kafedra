@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}PDF Yuklash{% endblock %}
+{% block page_title %}PDF Yuklash{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="table-card">
+            <h6 class="fw-bold mb-4">
+                <i class="bi bi-cloud-upload me-2 text-primary"></i>PDF fayllarni yuklash
+            </h6>
+
+            <!-- Yuklash turi tanlash -->
+            <div class="d-flex gap-3 mb-4">
+                <button class="btn btn-outline-primary flex-fill active" 
+                        id="btnBitta" onclick="tanlash('bitta')">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF fayllar
+                </button>
+                <button class="btn btn-outline-primary flex-fill" 
+                        id="btnZip" onclick="tanlash('zip')">
+                    <i class="bi bi-file-zip me-1"></i>ZIP arxiv
+                </button>
+            </div>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="yuklash_turi" id="yuklash_turi" value="bitta">
+
+                <!-- PDF yuklash -->
+                <div id="sectionBitta">
+                    <div class="upload-zone" onclick="document.getElementById('pdfInput').click()">
+                        <i class="bi bi-file-earmark-pdf text-danger" style="font-size:2.5rem;"></i>
+                        <p class="mt-2 mb-1 fw-semibold">PDF fayllarni tanlang</p>
+                        <p class="text-muted small">Bir nechta fayl tanlash mumkin</p>
+                        <input type="file" id="pdfInput" name="pdf_fayllar" 
+                               multiple accept=".pdf" style="display:none"
+                               onchange="fayllarKorsat(this)">
+                    </div>
+                    <div id="pdfRoyxat" class="mt-2"></div>
+                </div>
+
+                <!-- ZIP yuklash -->
+                <div id="sectionZip" style="display:none">
+                    <div class="upload-zone" onclick="document.getElementById('zipInput').click()">
+                        <i class="bi bi-file-zip text-warning" style="font-size:2.5rem;"></i>
+                        <p class="mt-2 mb-1 fw-semibold">ZIP faylni tanlang</p>
+                        <p class="text-muted small">ZIP ichida PDF fayllar bo'lishi kerak</p>
+                        <input type="file" id="zipInput" name="zip_fayl" 
+                               accept=".zip" style="display:none"
+                               onchange="zipKorsat(this)">
+                    </div>
+                    <div id="zipNom" class="mt-2"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mt-4">
+                    <i class="bi bi-upload me-2"></i>Yuklash va qayta ishlash
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function tanlash(tur) {
+    document.getElementById('yuklash_turi').value = tur;
+    if (tur === 'bitta') {
+        document.getElementById('sectionBitta').style.display = 'block';
+        document.getElementById('sectionZip').style.display = 'none';
+        document.getElementById('btnBitta').classList.add('active');
+        document.getElementById('btnZip').classList.remove('active');
+    } else {
+        document.getElementById('sectionBitta').style.display = 'none';
+        document.getElementById('sectionZip').style.display = 'block';
+        document.getElementById('btnBitta').classList.remove('active');
+        document.getElementById('btnZip').classList.add('active');
+    }
+}
+
+function fayllarKorsat(input) {
+    const royxat = document.getElementById('pdfRoyxat');
+    royxat.innerHTML = '';
+    Array.from(input.files).forEach(fayl => {
+        royxat.innerHTML += `
+            <div class="d-flex align-items-center gap-2 p-2 border rounded mt-1">
+                <i class="bi bi-file-earmark-pdf text-danger"></i>
+                <span class="small">${fayl.name}</span>
+                <span class="badge bg-light text-muted ms-auto">
+                    ${(fayl.size / 1024).toFixed(0)} KB
+                </span>
+            </div>`;
+    });
+}
+
+function zipKorsat(input) {
+    const nom = document.getElementById('zipNom');
+    if (input.files[0]) {
+        nom.innerHTML = `
+            <div class="d-flex align-items-center gap-2 p-2 border rounded mt-1">
+                <i class="bi bi-file-zip text-warning"></i>
+                <span class="small">${input.files[0].name}</span>
+            </div>`;
+    }
+}
+</script>
+{% endblock %}

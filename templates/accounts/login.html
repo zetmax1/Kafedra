@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block auth_content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center"
+     style="background: linear-gradient(135deg, #1a1a2e 0%, #2E86AB 100%);">
+    <div class="card border-0 shadow-lg" style="width: 400px; border-radius: 16px;">
+        <div class="card-body p-5">
+            <div class="text-center mb-4">
+                <i class="bi bi-mortarboard-fill text-primary" style="font-size: 2.5rem;"></i>
+                <h4 class="fw-bold mt-2">Kafedra Tizimi</h4>
+                <p class="text-muted small">Hisobingizga kiring</p>
+            </div>
+
+            {% if error %}
+            <div class="alert alert-danger py-2 small" id="errorAlert">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" id="loginForm">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Email manzil</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                        <input type="email" name="email" class="form-control"
+                               placeholder="email@example.com"
+                               {% if blocked %}disabled{% endif %} required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Parol</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" name="password" class="form-control"
+                               placeholder="••••••••"
+                               {% if blocked %}disabled{% endif %} required>
+                    </div>
+                </div>
+                <div class="text-end mb-3">
+                    <a href="{% url 'password_reset' %}" class="text-muted small">
+                        Parolni unutdingizmi?
+                    </a>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold"
+                        id="loginBtn" {% if blocked %}disabled{% endif %}>
+                    {% if blocked %}
+                        <span id="timerText">Kuting...</span>
+                    {% else %}
+                        Kirish
+                    {% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if blocked %}
+<script>
+    // Xabardan qolgan soniyani olamiz
+    const errorText = document.getElementById('errorAlert').innerText;
+    const match = errorText.match(/(\d+) soniya/);
+    let seconds = match ? parseInt(match[1]) : 30;
+
+    const timerText = document.getElementById('timerText');
+    const loginBtn = document.getElementById('loginBtn');
+    const inputs = document.querySelectorAll('input');
+
+    const interval = setInterval(() => {
+        seconds--;
+        timerText.innerText = `${seconds} soniyadan so'ng qayta urining`;
+        if (seconds <= 0) {
+            clearInterval(interval);
+            location.reload(); // Sahifani yangilash
+        }
+    }, 1000);
+</script>
+{% endif %}
+{% endblock %}

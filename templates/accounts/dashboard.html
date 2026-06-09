@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Jadvallar ro'yxati va tanlash -->
+<div class="table-card mb-4">
+    <h6 class="fw-bold mb-3">
+        <i class="bi bi-table me-2 text-primary"></i>
+        Excel jadvallar — statistika uchun tanlang
+    </h6>
+
+    {% if barcha_jadvallar %}
+    <form method="get" id="jadvalForm">
+        <div class="row g-2 mb-3">
+            {% for jadval in barcha_jadvallar %}
+            <div class="col-md-4">
+                <div class="border rounded p-3 h-100
+                            {% if jadval.pk|stringformat:'s' in tanlangan_ids %}
+                            border-primary
+                            {% endif %}"
+                     style="cursor:pointer; transition: all 0.2s;
+                            {% if jadval.pk|stringformat:'s' in tanlangan_ids %}
+                            background:#f0f8ff;
+                            {% endif %}"
+                     onclick="document.getElementById('j_{{ jadval.pk }}').click()">
+                    <div class="d-flex align-items-start gap-2">
+                        <input class="form-check-input mt-1 flex-shrink-0"
+                               type="checkbox"
+                               name="jadval_ids"
+                               value="{{ jadval.pk }}"
+                               id="j_{{ jadval.pk }}"
+                               onchange="document.getElementById('jadvalForm').submit()"
+                               {% if jadval.pk|stringformat:'s' in tanlangan_ids %}
+                               checked{% endif %}>
+                        <div>
+                            <div class="fw-semibold small">
+                                <i class="bi bi-file-earmark-excel
+                                          text-success me-1"></i>
+                                {% if jadval.fayl %}
+                                    {{ jadval.fayl.name|slice:"14:"|truncatechars:28 }}
+                                {% else %}
+                                    Google Sheets
+                                {% endif %}
+                            </div>
+                            <div class="text-muted mt-1" style="font-size:0.75rem;">
+                                {{ jadval.yuklangan_vaqt|date:"d.m.Y" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if tanlangan_ids %}
+        <button type="button" onclick="window.location='{% url 'dashboard' %}'"
+                class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-x me-1"></i>Tanlovni tozalash
+        </button>
+        {% endif %}
+    </form>
+    {% else %}
+    <div class="text-center py-4 text-muted">
+        <i class="bi bi-table" style="font-size:2.5rem;"></i>
+        <p class="mt-2">Hali jadval yuklanmagan</p>
+        <a href="{% url 'excel_yuklash' %}" class="btn btn-primary btn-sm">
+            Jadval yuklash
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Statistika -->
+{% if statistika %}
+<div class="table-card">
+    <h6 class="fw-bold mb-4">
+        <i class="bi bi-bar-chart me-2 text-primary"></i>
+        Umumiy statistika
+        <span class="badge bg-primary ms-2">
+            {{ tanlangan_jadvallar|length }} ta jadval
+        </span>
+    </h6>
+
+    <!-- Asosiy ko'rsatkichlar -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="p-4 rounded-3 text-center h-100"
+                 style="background:#EBF5FB; border:1px solid #AED6F1;">
+                <div style="font-size:2.5rem; font-weight:700; color:#2E86AB;">
+                    {{ statistika.jami_talabalar }}
+                </div>
+                <div class="fw-semibold mt-1" style="color:#2E86AB;">
+                    Jami talabalar
+                </div>
+                <div class="text-muted small mt-1">
+                    {{ tanlangan_jadvallar|length }} ta guruh ma'lumoti
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-4 rounded-3 text-center h-100"
+                 style="background:#EAFAF1; border:1px solid #A9DFBF;">
+                <div style="font-size:2.5rem; font-weight:700; color:#1E8449;">
+                    {{ statistika.ozlashtirish }}%
+                </div>
+                <div class="fw-semibold mt-1" style="color:#1E8449;">
+                    O'zlashtirish ko'rsatkichi
+                </div>
+                <div class="text-muted small mt-1">
+                    ("5"+"4"+"3") / jami × 100
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-4 rounded-3 text-center h-100"
+                 style="background:#FFFDE7; border:1px solid #F9E79F;">
+                <div style="font-size:2.5rem; font-weight:700; color:#B7950B;">
+                    {{ statistika.sifat }}%
+                </div>
+                <div class="fw-semibold mt-1" style="color:#B7950B;">
+                    Sifat ko'rsatkichi
+                </div>
+                <div class="text-muted small mt-1">
+                    ("5"+"4") / jami × 100
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Baho taqsimoti -->
+    <h6 class="text-muted small fw-semibold mb-3">BAHO TAQSIMOTI</h6>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="p-3 rounded-3" style="background:#C6EFCE;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold" style="color:#276221;">"5" olganlar</div>
+                        <div style="font-size:1.8rem; font-weight:700; color:#276221;">
+                            {{ statistika.jami_5 }}
+                        </div>
+                    </div>
+                    <div style="font-size:1.5rem; color:#276221; opacity:0.5;">★</div>
+                </div>
+                <div class="progress mt-2" style="height:6px; background:#a8d5a2;">
+                    <div class="progress-bar" style="background:#276221;
+                        width:{% widthratio statistika.jami_5 statistika.jami_talabalar 100 %}%">
+                    </div>
+                </div>
+                <div class="text-end mt-1" style="font-size:0.75rem; color:#276221;">
+                    {% widthratio statistika.jami_5 statistika.jami_talabalar 100 %}%
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="p-3 rounded-3" style="background:#FFEB9C;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold" style="color:#7d6608;">"4" olganlar</div>
+                        <div style="font-size:1.8rem; font-weight:700; color:#7d6608;">
+                            {{ statistika.jami_4 }}
+                        </div>
+                    </div>
+                    <div style="font-size:1.5rem; color:#7d6608; opacity:0.5;">★</div>
+                </div>
+                <div class="progress mt-2" style="height:6px; background:#f0d060;">
+                    <div class="progress-bar" style="background:#7d6608;
+                        width:{% widthratio statistika.jami_4 statistika.jami_talabalar 100 %}%">
+                    </div>
+                </div>
+                <div class="text-end mt-1" style="font-size:0.75rem; color:#7d6608;">
+                    {% widthratio statistika.jami_4 statistika.jami_talabalar 100 %}%
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="p-3 rounded-3" style="background:#FFC7CE;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold" style="color:#9c0006;">"3" olganlar</div>
+                        <div style="font-size:1.8rem; font-weight:700; color:#9c0006;">
+                            {{ statistika.jami_3 }}
+                        </div>
+                    </div>
+                    <div style="font-size:1.5rem; color:#9c0006; opacity:0.5;">★</div>
+                </div>
+                <div class="progress mt-2" style="height:6px; background:#f0a0a8;">
+                    <div class="progress-bar" style="background:#9c0006;
+                        width:{% widthratio statistika.jami_3 statistika.jami_talabalar 100 %}%">
+                    </div>
+                </div>
+                <div class="text-end mt-1" style="font-size:0.75rem; color:#9c0006;">
+                    {% widthratio statistika.jami_3 statistika.jami_talabalar 100 %}%
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="p-3 rounded-3" style="background:#EDCB9A;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold" style="color:#7d4e00;">Kelmadi</div>
+                        <div style="font-size:1.8rem; font-weight:700; color:#7d4e00;">
+                            {{ statistika.jami_kelmadi }}
+                        </div>
+                    </div>
+                    <div style="font-size:1.5rem; color:#7d4e00; opacity:0.5;">✗</div>
+                </div>
+                <div class="progress mt-2" style="height:6px; background:#d4a870;">
+                    <div class="progress-bar" style="background:#7d4e00;
+                        width:{% widthratio statistika.jami_kelmadi statistika.jami_talabalar 100 %}%">
+                    </div>
+                </div>
+                <div class="text-end mt-1" style="font-size:0.75rem; color:#7d4e00;">
+                    {% widthratio statistika.jami_kelmadi statistika.jami_talabalar 100 %}%
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif tanlangan_ids %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Tanlangan jadvaldan statistika hisoblab bo'lmadi.
+    Jadvalda <strong>Guruhdagi talabalar soni</strong>,
+    <strong>"5"</strong>, <strong>"4"</strong>,
+    <strong>"3"</strong> ustunlari bo'lishi kerak.
+</div>
+{% endif %}
+
+{% endblock %}

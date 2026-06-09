@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}PDF Hisobotlar{% endblock %}
+{% block page_title %}PDF Hisobotlar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <span class="text-muted small">Jami: {{ hisobotlar.count }} ta fayl</span>
+    <div class="d-flex gap-2">
+        {% if hisobotlar %}
+        <form method="post" action="{% url 'pdf_barchani_ochirish' %}"
+              onsubmit="return confirm('Barcha PDF lar o\'chirilsinmi?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash me-1"></i>Barchani o'chirish
+            </button>
+        </form>
+        {% endif %}
+        <a href="{% url 'pdf_yuklash' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-upload me-1"></i>Yangi fayl
+        </a>
+        {% if hisobotlar %}
+        <a href="{% url 'excel_yuklab_olish' 0 %}" class="btn btn-success btn-sm">
+            <i class="bi bi-file-excel me-1"></i>Excel yuklash
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="table-card">
+    {% if hisobotlar %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="small">#</th>
+                    <th class="small">Fayl nomi</th>
+                    <th class="small">Holat</th>
+                    <th class="small">Yuklangan vaqt</th>
+                    <th class="small">Amallar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in hisobotlar %}
+                <tr>
+                    <td class="text-muted small">{{ forloop.counter }}</td>
+                    <td>
+                        <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                        <span class="small">
+                            {{ h.fayl.name|slice:"12:"|truncatechars:40 }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if h.holat == 'muvaffaqiyatli' %}
+                        <span class="badge bg-success">✓ Muvaffaqiyatli</span>
+                        {% elif h.holat == 'xato' %}
+                        <span class="badge bg-danger">✗ Xato</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">⏳ Kutilmoqda</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">
+                        {{ h.yuklangan_vaqt|date:"d.m.Y H:i" }}
+                    </td>
+                    <td>
+                        <form method="post"
+                              action="{% url 'pdf_ochirish' h.pk %}"
+                              style="display:inline"
+                              onsubmit="return confirm('PDF o\'chirilsinmi?')">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox" style="font-size:3rem;"></i>
+        <p class="mt-2">Hali PDF yuklanmagan</p>
+        <a href="{% url 'pdf_yuklash' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-upload me-1"></i>Yuklash
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block auth_content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center"
+     style="background: linear-gradient(135deg, #1a1a2e 0%, #2E86AB 100%);">
+    <div class="card border-0 shadow-lg" style="width: 420px; border-radius: 16px;">
+        <div class="card-body p-5">
+            <div class="text-center mb-4">
+                <i class="bi bi-key-fill text-warning" style="font-size: 2.5rem;"></i>
+                <h4 class="fw-bold mt-2">Yangi parol</h4>
+                <p class="text-muted small">Yangi parolingizni kiriting</p>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Yangi parol</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" name="new_password1" class="form-control"
+                               placeholder="••••••••" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Parolni takrorlang</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                        <input type="password" name="new_password2" class="form-control"
+                               placeholder="••••••••" required>
+                    </div>
+                </div>
+                {% if form.errors %}
+                <div class="alert alert-danger py-2 small">
+                    Parollar mos kelmadi yoki juda oddiy!
+                </div>
+                {% endif %}
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                    Saqlash
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

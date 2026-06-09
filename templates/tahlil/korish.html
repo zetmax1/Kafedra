@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load tahlil_tags %}
+{% block title %}Jadval Ko'rish{% endblock %}
+{% block page_title %}Jadval Ko'rish{% endblock %}
+
+{% block content %}
+<div class="table-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">
+            <i class="bi bi-funnel me-2 text-primary"></i>Filtr va tartib
+        </h6>
+        <a href="{% url 'tahlil' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Orqaga
+        </a>
+    </div>
+
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label fw-semibold small">Ustun tanlang</label>
+            <select class="form-select form-select-sm" id="filtrUstun"
+                    onchange="ustunTanlandi()">
+                <option value="">— Barchasi —</option>
+                {% for ustun in jadval.ustunlar %}
+                <option value="{{ forloop.counter0 }}">{{ ustun }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-semibold small">Qiymat tanlang</label>
+            <select class="form-select form-select-sm" id="filtrQiymat"
+                    onchange="filtrlash()">
+                <option value="">— Barchasi —</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-semibold small">Tartib</label>
+            <select class="form-select form-select-sm" id="tartibUstun"
+                    onchange="filtrlash()">
+                <option value="">— Tartib yo'q —</option>
+                {% for ustun in jadval.ustunlar %}
+                <option value="{{ forloop.counter0 }}_asc">{{ ustun }} ↑</option>
+                <option value="{{ forloop.counter0 }}_desc">{{ ustun }} ↓</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button onclick="filtrlashTozala()"
+                    class="btn btn-outline-secondary btn-sm w-100"
+                    title="Tozalash">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="aktivFiltrlar" class="mt-3" style="display:none">
+        <span class="text-muted small me-2">Aktiv filtr:</span>
+        <span class="badge bg-primary" id="filtrBadge"></span>
+    </div>
+</div>
+
+<div class="table-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-muted small">
+            Jami: <strong id="qatorSoni">{{ qatorlar|length }}</strong> ta qator
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0" id="asosiyJadval">
+            <thead id="jadvalHead">
+                <tr></tr>
+            </thead>
+            <tbody id="jadvalBody"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Ustun nomlari — index orqali ishlaymiz
+const ustunlar = JSON.parse('{{ ustunlar_json|escapejs }}');
+const unikalQiymatlar = JSON.parse('{{ unikal_json|escapejs }}');
+const barchaQatorlar = JSON.parse('{{ qatorlar_json|escapejs }}');
+
+// Har ustun uchun rang
+const ustunRanglari = {
+    'T/R': '#ffffff',
+    'Guruh': '#ffffff',
+    'Fan nomi': '#ffffff',
+    "Fan o'qituvchisi": '#ffffff',
+    'Guruhdagi talabalar soni': '#D9D9D9',
+    '"5"': '#C6EFCE',
+    '"4"': '#FFEB9C',
+    '"3"': '#FFC7CE',
+    'Kelmadi': '#EDCB9A',
+    "O'zlashtirmagan": '#BDD7EE',
+    "O'zlashtirish ko'rsatkichi (%)": '#BDD7EE',
+    'Sifat ko\'rsatkichi "4","5" (%)': '#BDD7EE',
+};
+
+function getRang(ustun) {
+    return ustunRanglari[ustun] || '#f8f9fa';
+}
+
+// Sarlavha yaratish
+function sarlavhaYarat() {
+    const tr = document.querySelector('#jadvalHead tr');
+    tr.innerHTML = '';
+    ustunlar.forEach((ustun, idx) => {
+        const th = document.createElement('th');
+        th.className = 'small';
+        th.style.cssText = `
+            cursor:pointer;
+            white-space:nowrap;
+            background-color:${getRang(ustun)};
+            font-weight:600;
+        `;
+        th.innerHTML = `${ustun} <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:0.7rem;"></i>`;
+        th.onclick = () => ustunSarlavhaBosish(idx);
+        tr.appendChild(th);
+    });
+}
+
+// Jadvalni render qilish
+function jadvalRender(qatorlar) {
+    const tbody = document.getElementById('jadvalBody');
+    tbody.innerHTML = '';
+
+    if (qatorlar.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = ustunlar.length;
+        td.className = 'text-center text-muted py-3';
+        td.textContent = 'Hech narsa topilmadi';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+
+    qatorlar.forEach(qator => {
+        const tr = document.createElement('tr');
+        ustunlar.forEach((ustun, idx) => {
+            const td = document.createElement('td');
+            td.className = 'small';
+            td.style.cursor = 'pointer';
+            const qiymat = qator[idx] !== undefined ? qator[idx] : '';
+            td.textContent = qiymat;
+            td.title = qiymat;
+            td.onclick = () => katak(idx, qiymat);
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('qatorSoni').textContent = qatorlar.length;
+}
+
+// Katak bosilganda
+function katak(ustunIdx, qiymat) {
+    const filtrUstun = document.getElementById('filtrUstun');
+    filtrUstun.value = ustunIdx;
+    ustunTanlandi();
+    setTimeout(() => {
+        const filtrQiymat = document.getElementById('filtrQiymat');
+        for (let opt of filtrQiymat.options) {
+            if (opt.value === String(qiymat)) {
+                filtrQiymat.value = String(qiymat);
+                break;
+            }
+        }
+        filtrlash();
+    }, 50);
+}
+
+// Ustun sarlavhasi bosilganda tartib
+function ustunSarlavhaBosish(idx) {
+    const tartib = document.getElementById('tartibUstun');
+    const joriy = tartib.value;
+    if (joriy === idx + '_asc') {
+        tartib.value = idx + '_desc';
+    } else {
+        tartib.value = idx + '_asc';
+    }
+    filtrlash();
+}
+
+// Ustun tanlanganda
+function ustunTanlandi() {
+    const ustunIdx = parseInt(document.getElementById('filtrUstun').value);
+    const filtrQiymat = document.getElementById('filtrQiymat');
+    filtrQiymat.innerHTML = '<option value="">— Barchasi —</option>';
+
+    if (!isNaN(ustunIdx) && unikalQiymatlar[ustunIdx]) {
+        unikalQiymatlar[ustunIdx].forEach(q => {
+            const opt = document.createElement('option');
+            opt.value = q;
+            opt.textContent = q;
+            filtrQiymat.appendChild(opt);
+        });
+    }
+    filtrlash();
+}
+
+// Asosiy filtrlash
+function filtrlash() {
+    const ustunIdxStr = document.getElementById('filtrUstun').value;
+    const qiymat = document.getElementById('filtrQiymat').value;
+    const tartibVal = document.getElementById('tartibUstun').value;
+
+    let natija = [...barchaQatorlar];
+
+    // Filtrlash
+    if (ustunIdxStr !== '' && qiymat) {
+        const ustunIdx = parseInt(ustunIdxStr);
+        natija = natija.filter(q =>
+            String(q[ustunIdx] || '').toLowerCase()
+                .includes(qiymat.toLowerCase())
+        );
+    }
+
+    // Tartib
+    if (tartibVal) {
+        const parts = tartibVal.split('_');
+        const tartibYon = parts[parts.length - 1];
+        const tartibIdx = parseInt(parts[0]);
+
+        natija.sort((a, b) => {
+            const av = String(a[tartibIdx] || '');
+            const bv = String(b[tartibIdx] || '');
+            const an = parseFloat(av);
+            const bn = parseFloat(bv);
+            if (!isNaN(an) && !isNaN(bn)) {
+                return tartibYon === 'asc' ? an - bn : bn - an;
+            }
+            return tartibYon === 'asc'
+                ? av.localeCompare(bv, 'uz')
+                : bv.localeCompare(av, 'uz');
+        });
+    }
+
+    jadvalRender(natija);
+
+    // Aktiv filtr
+    const aktivDiv = document.getElementById('aktivFiltrlar');
+    const badge = document.getElementById('filtrBadge');
+    if (ustunIdxStr !== '' && qiymat) {
+        aktivDiv.style.display = 'block';
+        badge.textContent = `${ustunlar[parseInt(ustunIdxStr)]}: ${qiymat}`;
+    } else {
+        aktivDiv.style.display = 'none';
+    }
+}
+
+// Tozalash
+function filtrlashTozala() {
+    document.getElementById('filtrUstun').value = '';
+    document.getElementById('filtrQiymat').innerHTML =
+        '<option value="">— Barchasi —</option>';
+    document.getElementById('tartibUstun').value = '';
+    filtrlash();
+}
+
+// Ishga tushirish
+sarlavhaYarat();
+jadvalRender(barchaQatorlar);
+</script>
+{% endblock %}

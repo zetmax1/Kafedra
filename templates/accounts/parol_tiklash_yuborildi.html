@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block auth_content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center"
+     style="background: linear-gradient(135deg, #1a1a2e 0%, #2E86AB 100%);">
+    <div class="card border-0 shadow-lg" style="width: 420px; border-radius: 16px;">
+        <div class="card-body p-5 text-center">
+            <i class="bi bi-envelope-check-fill text-success" style="font-size: 3rem;"></i>
+            <h4 class="fw-bold mt-3">Email yuborildi!</h4>
+            <p class="text-muted">Emailingizga parol tiklash havolasi yuborildi. Iltimos tekshiring.</p>
+            <a href="{% url 'login' %}" class="btn btn-primary w-100 py-2 fw-semibold mt-2">
+                Loginga qaytish
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

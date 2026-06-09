@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Sozlamalar{% endblock %}
+{% block page_title %}Sozlamalar{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="table-card">
+            <h6 class="fw-bold mb-4">
+                <i class="bi bi-person-circle me-2 text-primary"></i>Profil
+            </h6>
+            <div class="mb-3">
+                <label class="form-label text-muted small">Email</label>
+                <input type="text" class="form-control" value="{{ user.email }}" disabled>
+            </div>
+
+            <hr>
+
+            <h6 class="fw-bold mb-3">
+                <i class="bi bi-key me-2 text-primary"></i>Parolni yangilash
+            </h6>
+
+            {% if message %}
+            <div class="alert alert-success py-2 small">
+                <i class="bi bi-check-circle me-1"></i>{{ message }}
+            </div>
+            {% endif %}
+
+            {% if error %}
+            <div class="alert alert-danger py-2 small">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+            </div>
+            {% endif %}
+
+            <!-- Parol talablari -->
+            <div class="alert alert-light border small mb-3">
+                <p class="fw-semibold mb-1">Parol talablari:</p>
+                <ul class="mb-0 ps-3">
+                    <li>Kamida <strong>8 ta belgi</strong></li>
+                    <li>Kamida <strong>1 ta katta harf</strong> (A-Z)</li>
+                    <li>Kamida <strong>1 ta raqam</strong> (0-9)</li>
+                </ul>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Eski parol</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" name="eski_parol" class="form-control"
+                               placeholder="••••••••" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Yangi parol</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                        <input type="password" name="yangi_parol1" class="form-control"
+                               placeholder="••••••••" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Yangi parolni takrorlang</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                        <input type="password" name="yangi_parol2" class="form-control"
+                               placeholder="••••••••" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                    Saqlash
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
