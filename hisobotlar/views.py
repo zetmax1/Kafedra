@@ -2,11 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
-from .models import PDFHisobot, ImtihonNatija
+from .models import PDFHisobot, ImtihonNatija, TalabaYozuv
 from .utils import pdf_dan_malumot_ajrat
 import zipfile
 import os
-import re  
+import re
+
 
 @login_required
 def hisobotlar_list(request):
@@ -24,17 +25,14 @@ def pdf_yuklash(request):
         fayllar = []
 
         if yuklash_turi == 'bitta':
-            # Bir yoki bir nechta PDF
             pdf_fayllar = request.FILES.getlist('pdf_fayllar')
             for fayl in pdf_fayllar:
                 if fayl.name.endswith('.pdf'):
                     fayllar.append(fayl)
 
         elif yuklash_turi == 'zip':
-            # ZIP fayl
             zip_fayl = request.FILES.get('zip_fayl')
             if zip_fayl and zip_fayl.name.endswith('.zip'):
-                # ZIP ni vaqtincha saqlab ochish
                 import tempfile
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp:
                     for chunk in zip_fayl.chunks():
@@ -45,7 +43,6 @@ def pdf_yuklash(request):
                     with zipfile.ZipFile(tmp_path, 'r') as z:
                         pdf_nomlar = [n for n in z.namelist() if n.endswith('.pdf')]
                         for pdf_nom in pdf_nomlar:
-                            # ZIP ichidagi PDF ni o'qish
                             pdf_data = z.read(pdf_nom)
                             from django.core.files.uploadedfile import InMemoryUploadedFile
                             import io
@@ -80,7 +77,8 @@ def pdf_yuklash(request):
                 hisobot.save()
                 xato_fayllar.append(fayl.name)
             else:
-                ImtihonNatija.objects.create(
+                # ImtihonNatija — umumiy statistika
+                imtihon_natija = ImtihonNatija.objects.create(
                     hisobot=hisobot,
                     fan_nomi=natija['fan_nomi'],
                     fan_oqituvchi=natija['fan_oqituvchi'],
@@ -91,6 +89,29 @@ def pdf_yuklash(request):
                     baho_3=natija['baho_3'],
                     kelmadi=natija['kelmadi'],
                 )
+
+                # TalabaYozuv — har bir talabaning batafsil ma'lumoti
+                talaba_yozuvlar = []
+                for t in natija.get('talabalar', []):
+                    talaba_yozuvlar.append(TalabaYozuv(
+                        natija=imtihon_natija,
+                        guruh=natija['guruh'],
+                        fan_nomi=natija['fan_nomi'],
+                        fan_oqituvchi=natija['fan_oqituvchi'],
+                        fio=t['fio'],
+                        reyting_raqam=t['reyting_raqam'],
+                        joriy=t['joriy'],
+                        oraliq=t['oraliq'],
+                        joriy_oraliq=t['joriy_oraliq'],
+                        yakuniy=t['yakuniy'],
+                        ozlashtirish=t['ozlashtirish'],
+                        baho=t['baho'],
+                    ))
+
+                # bulk_create bilan bir marta bazaga yozish (tezroq)
+                if talaba_yozuvlar:
+                    TalabaYozuv.objects.bulk_create(talaba_yozuvlar)
+
                 hisobot.holat = 'muvaffaqiyatli'
                 hisobot.save()
                 muvaffaqiyat += 1
@@ -136,7 +157,6 @@ def excel_yuklab_olish(request, pk):
     ws = wb.active
     ws.title = "Imtihon natijalari"
 
-    # Sarlavha ranglari
     OQISH   = "FFFFFF"
     KULRANG = "D9D9D9"
     YASHIL  = "C6EFCE"
@@ -152,7 +172,6 @@ def excel_yuklab_olish(request, pk):
         bottom=Side(style='thin')
     )
 
-    # Sarlavha ustunlari
     ustunlar = [
         ("T/R",                              OQISH,   6),
         ("Guruh",                            OQISH,  12),
@@ -168,20 +187,16 @@ def excel_yuklab_olish(request, pk):
         ('Sifat ko\'rsatkichi "4","5" (%)',  MOVIY,   20),
     ]
 
-    # 1-qator — sarlavha (rangli)
     for col, (nom, rang, kenglik) in enumerate(ustunlar, 1):
         cell = ws.cell(row=1, column=col, value=nom)
         cell.font = Font(bold=True, size=10)
         cell.fill = PatternFill("solid", fgColor=rang)
-        cell.alignment = Alignment(
-            horizontal='center', vertical='center', wrap_text=True
-        )
+        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
         cell.border = border
         ws.column_dimensions[get_column_letter(col)].width = kenglik
 
     ws.row_dimensions[1].height = 45
 
-    # Ma'lumot qatorlari — oq rang, formula bilan
     for row, n in enumerate(natijalar, 2):
         E = f"E{row}"
         F = f"F{row}"
@@ -208,11 +223,9 @@ def excel_yuklab_olish(request, pk):
             cell.font = Font(size=10)
             cell.alignment = Alignment(horizontal='center', vertical='center')
             cell.border = border
-            # Ma'lumot qatorlari oq
 
         ws.row_dimensions[row].height = 18
 
-    # Saqlash
     with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
         wb.save(tmp.name)
         tmp_path = tmp.name
@@ -227,17 +240,17 @@ def excel_yuklab_olish(request, pk):
     os.unlink(tmp_path)
     return response
 
+
 @login_required
 def pdf_ochirish(request, pk):
     hisobot = get_object_or_404(PDFHisobot, pk=pk, yuklagan_user=request.user)
     if request.method == 'POST':
-        # Faylni diskdan o'chirish
         if hisobot.fayl and os.path.isfile(hisobot.fayl.path):
             os.remove(hisobot.fayl.path)
-        # Bazadan o'chirish (natijalar ham cascade o'chadi)
         hisobot.delete()
         messages.success(request, "PDF muvaffaqiyatli o'chirildi!")
     return redirect('hisobotlar')
+
 
 @login_required
 def pdf_barchani_ochirish(request):

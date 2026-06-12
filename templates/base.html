@@ -26,6 +26,10 @@
            class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <i class="bi bi-grid-1x2"></i> Dashboard
         </a>
+        <a href="{% url 'umumiy_malumotlar' %}"
+            class="nav-link {% if request.resolver_match.url_name == 'umumiy_malumotlar' %}active{% endif %}">
+            <i class="bi bi-table"></i> Umumiy ma'lumotlar
+        </a>
         <a href="{% url 'hisobotlar' %}" 
            class="nav-link {% if 'hisobotlar' in request.resolver_match.url_name %}active{% endif %}">
             <i class="bi bi-file-earmark-pdf"></i> PDF Hisobotlar
