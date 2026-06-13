@@ -27,9 +27,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG')
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+
+# Required for HTTPS behind Nginx proxy
+CSRF_TRUSTED_ORIGINS = [
+    f'https://{host.strip()}' for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host.strip()
+]
 
 
 # Application definition
@@ -114,10 +119,17 @@ AUTH_PASSWORD_VALIDATORS = [
 # Cache nazorat
 SECURE_BROWSER_XSS_FILTER = True
 
-# Session xavfsizligi  
-SESSION_COOKIE_HTTPONLY = True
-SESSION_SAVE_EVERY_REQUEST = True
+# Production security settings
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 yil
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
+# Session xavfsizligi
 # 30 daqiqa harakatsiz bo'lsa avtomatik chiqish
 SESSION_COOKIE_AGE = 1800  # 30 daqiqa (soniyada)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Brauzer yopilsa chiqish

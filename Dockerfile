@@ -22,5 +22,12 @@ RUN pip install -r requirements.txt
 # Copy project files
 COPY . /app/
 
+# Copy and set entrypoint
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Expose port
 EXPOSE 8088
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8088", "--workers", "3", "--timeout", "120"]
